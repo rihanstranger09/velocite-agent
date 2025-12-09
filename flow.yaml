@@ -1,0 +1,26 @@
+id: support-agent-investigator
+namespace: dev.hackathon
+description: "AI Agent that investigates bugs using local Ollama"
+
+inputs:
+  - id: bug_report
+    type: STRING
+    defaults: "Users are reporting Error 500 when clicking the 'Buy' button on iPhone."
+
+tasks:
+  - id: analyze_bug
+    type: io.kestra.plugin.core.http.Request
+    uri: "http://host.docker.internal:11434/api/generate"
+    method: POST
+    contentType: "application/json"
+    body: |
+      {
+        "model": "qwen2.5:0.5b", 
+        "prompt": "You are a Senior Engineer. Analyze this bug report: '{{ inputs.bug_report }}'. Is this a critical UI bug? Answer YES or NO.",
+        "stream": false
+      }
+
+  - id: final_decision
+    type: io.kestra.plugin.core.log.Log
+    # The 'fromJson' function converts the text into an object we can read
+    message: "🔴 CRITICAL BUG DETECTED? -> {{ fromJson(outputs.analyze_bug.body).response }}"
